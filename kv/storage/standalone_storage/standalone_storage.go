@@ -1,8 +1,11 @@
 package standalone_storage
 
 import (
+	"path/filepath"
 	"github.com/pingcap-incubator/tinykv/kv/config"
 	"github.com/pingcap-incubator/tinykv/kv/storage"
+	"github.com/Connor1996/badger"
+	"github.com/pingcap-incubator/tinykv/kv/util/engine_util"
 	"github.com/pingcap-incubator/tinykv/proto/pkg/kvrpcpb"
 )
 
@@ -10,11 +13,21 @@ import (
 // communicate with other nodes and all data is stored locally.
 type StandAloneStorage struct {
 	// Your Data Here (1).
+	db *badger.DB
 }
-
+type StandAloneReader struct{
+	kvTxn *badger.Txn// KV Txn is term for the data transaction (user data)
+	// while Raft Txn is consensus log transactioin (internal data)
+}
 func NewStandAloneStorage(conf *config.Config) *StandAloneStorage {
 	// Your Code Here (1).
-	return nil
+	dbPath := conf.DBPath
+	kvPath := filepath.Join(dbPath,"kv")
+	//raftpath := path.Join(dbPath,"raft")
+	db := engine_util.CreateDB(kvPath,false)
+	return &StandAloneStorage{
+		db: db,
+	}
 }
 
 func (s *StandAloneStorage) Start() error {
@@ -24,15 +37,53 @@ func (s *StandAloneStorage) Start() error {
 
 func (s *StandAloneStorage) Stop() error {
 	// Your Code Here (1).
-	return nil
+
+	return s.db.Close()
 }
 
 func (s *StandAloneStorage) Reader(ctx *kvrpcpb.Context) (storage.StorageReader, error) {
 	// Your Code Here (1).
-	return nil, nil
+	txn := s.db.NewTransaction(false)
+
+	return &StandAloneReader{
+		kvTxn:txn,
+	},nil
 }
 
 func (s *StandAloneStorage) Write(ctx *kvrpcpb.Context, batch []storage.Modify) error {
 	// Your Code Here (1).
+	for _,m := range batch{
+		switch m.Data.(type){
+		case *storage.Put:
+			put := m.Data.(storage.Put)
+			err := engine_util.PutCF(s.db, put.Cf,put.Key,put.Value)
+			if err != nil{
+				return err
+			}
+		case *storage.Delete:
+			del:=m.Data.(storage.Delete)
+			err:= engine_util.DeleteCF(s.db,del.Cf,del.Key)
+			if err!= nil{
+				return err
+			}
+		}
+	}
 	return nil
 }
+
+func (r *StandAloneReader) GetCF(cf string, key []byte) ([]byte, error){
+	val,err := engine_util.GetCFFromTxn(r.kvTxn,cf,key)
+	if err == badger.ErrKeyNotFound{
+		return nil, nil
+	}
+	return val,err
+}
+
+func (r *StandAloneReader) IterCF(cf string) engine_util.DBIterator{
+	return engine_util.NewCFIterator(cf,r.kvTxn)
+}
+
+func (r *StandAloneReader) Close(){
+	r.kvTxn.Discard()
+}
+
