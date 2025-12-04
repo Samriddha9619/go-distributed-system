@@ -54,13 +54,13 @@ func (s *StandAloneStorage) Write(ctx *kvrpcpb.Context, batch []storage.Modify) 
 	// Your Code Here (1).
 	for _,m := range batch{
 		switch m.Data.(type){
-		case *storage.Put:
+		case storage.Put:
 			put := m.Data.(storage.Put)
 			err := engine_util.PutCF(s.db, put.Cf,put.Key,put.Value)
 			if err != nil{
 				return err
 			}
-		case *storage.Delete:
+		case storage.Delete:
 			del:=m.Data.(storage.Delete)
 			err:= engine_util.DeleteCF(s.db,del.Cf,del.Key)
 			if err!= nil{
