@@ -1,83 +1,134 @@
-# The TinyKV Course
+# TinyKV - Distributed Key-Value Storage System
 
-The TinyKV course builds a key-value storage system with the Raft consensus algorithm. It is inspired by [MIT 6.824](https://pdos.csail.mit.edu/6.824/) and [TiKV Project](https://github.com/tikv/tikv).
+> A learning implementation of a distributed key-value storage system based on the [TinyKV Course](https://github.com/tidb-incubator/tinykv)
 
-After completing this course, you will have the knowledge to implement a horizontally scalable, highly available, key-value storage service with distributed transaction support. Also, you will have a better understanding of TiKV architecture and implementation.
+## About
 
-## Course Architecture
+This project is an implementation of the TinyKV course, which builds a key-value storage system with the Raft consensus algorithm. The course is inspired by [MIT 6.824](https://pdos.csail.mit.edu/6.824/) and the [TiKV Project](https://github.com/tikv/tikv).
 
-The whole project is a skeleton code for a key-value server and a scheduler server at the beginning - you need to finish the core logic step by step:
+TinyKV helps you understand how to implement a horizontally scalable, highly available, key-value storage service with distributed transaction support, along with a deeper understanding of TiKV architecture and implementation.
 
-* [Standalone KV](doc/project1-StandaloneKV.md)
-  * Implement a standalone storage engine.
-  * Implement raw key-value service handlers.
-* [Raft KV](doc/project2-RaftKV.md)
-  * Implement the basic Raft algorithm.
-  * Build a fault-tolerant KV server on top of Raft.
-  * Add the support of Raft log garbage collection and snapshot.
-* [Multi-raft KV](doc/project3-MultiRaftKV.md)
-  * Implement membership change and leadership change to Raft algorithm.
-  * Implement conf change and region split on Raft store.
-  * Implement a basic scheduler.
-* [Transaction](doc/project4-Transaction.md)
-  * Implement the multi-version concurrency control layer.
-  * Implement handlers of `KvGet`, `KvPrewrite`, and `KvCommit` requests.
-  * Implement handlers of `KvScan`, `KvCheckTxnStatus`, `KvBatchRollback`, and `KvResolveLock` requests.
+## Project Status
+
+- [x] **Project 1: Standalone KV** - ✅ Completed
+  - Standalone storage engine implementation
+  - Raw key-value service handlers
+  
+- [ ] **Project 2: Raft KV** - 🚧 In Progress
+  - Basic Raft algorithm
+  - Fault-tolerant KV server on top of Raft
+  - Raft log garbage collection and snapshot support
+  
+- [ ] **Project 3: Multi-raft KV** - 📋 Planned
+  - Membership change and leadership change
+  - Conf change and region split on Raft store
+  - Basic scheduler implementation
+  
+- [ ] **Project 4: Transaction** - 📋 Planned
+  - Multi-version concurrency control (MVCC) layer
+  - Transaction handlers implementation
+
+## Course Architecture & Projects
+
+The project consists of four main stages, each building upon the previous one:
+
+### Project 1: Standalone KV
+[Documentation](doc/project1-StandaloneKV.md) | ✅ **Completed**
+- Implement a standalone storage engine
+- Implement raw key-value service handlers
+
+### Project 2: Raft KV
+[Documentation](doc/project2-RaftKV.md) | 🚧 **In Progress**
+- Implement the basic Raft algorithm
+- Build a fault-tolerant KV server on top of Raft
+- Add support for Raft log garbage collection and snapshot
+
+### Project 3: Multi-raft KV
+[Documentation](doc/project3-MultiRaftKV.md) | 📋 **Planned**
+- Implement membership change and leadership change in Raft
+- Implement conf change and region split on Raft store
+- Implement a basic scheduler
+
+### Project 4: Transaction
+[Documentation](doc/project4-Transaction.md) | 📋 **Planned**
+- Implement the multi-version concurrency control (MVCC) layer
+- Implement handlers for `KvGet`, `KvPrewrite`, and `KvCommit` requests
+- Implement handlers for `KvScan`, `KvCheckTxnStatus`, `KvBatchRollback`, and `KvResolveLock` requests
 
 ## Code Structure
 
 ![overview](doc/imgs/overview.png)
 
-Similar to the architecture of TiDB + TiKV + PD that separates the storage and computation, TinyKV only focuses on the storage layer of a distributed database system. If you are also interested in the SQL layer, please see [TinySQL](https://github.com/tidb-incubator/tinysql). Besides that, there is a component called TinyScheduler acting as a center control of the whole TinyKV cluster, which collects information from the heartbeats of TinyKV. After that, the TinyScheduler can generate scheduling tasks and distribute the tasks to the TinyKV instances. All of instances are communicated via RPC.
+Similar to the architecture of TiDB + TiKV + PD that separates storage and computation, TinyKV focuses on the storage layer of a distributed database system. If you're interested in the SQL layer, check out [TinySQL](https://github.com/tidb-incubator/tinysql). TinyScheduler acts as the central control of the TinyKV cluster, collecting information from heartbeats and generating scheduling tasks. All instances communicate via gRPC.
 
-The whole project is organized into the following directories:
+### Directory Structure
 
-* `kv` contains the implementation of the key-value store.
-* `raft` contains the implementation of the Raft consensus algorithm.
-* `scheduler` contains the implementation of the TinyScheduler, which is responsible for managing TinyKV nodes and generating timestamps.
-* `proto` contains the implementation of all communication between nodes and processes uses Protocol Buffers over gRPC. This package contains the protocol definitions used by TinyKV, and the generated Go code that you can use.
-* `log` contains utility to output log based on level.
+```
+├── kv/                  # Key-value store implementation
+│   ├── server/          # gRPC server and service handlers
+│   ├── storage/         # Storage interface and implementations
+│   ├── raftstore/       # Raft-based storage engine
+│   ├── transaction/     # Transaction layer (MVCC)
+│   └── coprocessor/     # Coprocessor for data processing
+├── raft/                # Raft consensus algorithm implementation
+├── scheduler/           # TinyScheduler for cluster management
+│   ├── server/          # Scheduler server and coordinator
+│   └── client/          # Scheduler client
+├── proto/               # Protocol Buffers definitions
+└── log/                 # Logging utilities
+```
 
-## Reading List
-
-We provide a [reading list](doc/reading_list.md) for the knowledge of distributed storage system. Though not all of them are highly related with this course, they can help you construct the knowledge system in this field.
-
-Also, you're encouraged to read the overview of TiKV's and PD's design to get a general impression on what you will build:
-
-* TiKV, the design of data storage ([English](https://en.pingcap.com/blog/tidb-internal-data-storage), [Chinese](https://pingcap.com/zh/blog/tidb-internal-1)).
-* PD, the design of scheduling ([English](https://en.pingcap.com/blog/tidb-internal-scheduling), [Chinese](https://pingcap.com/zh/blog/tidb-internal-3)).
-
-## Build TinyKV from Source
+## Learning Resources
 
 ### Prerequisites
 
-* `git`: The source code of TinyKV is hosted on GitHub as a git repository. To work with git repository, please [install `git`](https://git-scm.com/downloads).
-* `go`: TinyKV is a Go project. To build TinyKV from source, please [install `go`](https://golang.org/doc/install) with version greater or equal to 1.13.
-
-### Clone
-
-Clone the source code to your development machine.
-
-```bash
-git clone https://github.com/tidb-incubator/tinykv.git
-```
+- **Git**: [Install Git](https://git-scm.com/downloads)
+- **Go**: Version ≥ 1.13 ([Installation Guide](https://golang.org/doc/install))
 
 ### Build
 
-Build TinyKV from the source code.
+Build TinyKV from source:
 
 ```bash
-cd tinykv
+cd go-distributed-system
 make
 ```
 
-It builds the binary of `tinykv-server` and `tinyscheduler-server` to `bin` dir.
+This builds the `tinykv-server` and `tinyscheduler-server` binaries in the `bin/` directory.
 
-## Run TinyKV with TinySQL
+### Running the Server
 
-1. Get `tinysql-server` follow [its document](https://github.com/tidb-incubator/tinysql#deploy).
-2. Put the binary of `tinyscheduler-server`, `tinykv-server` and `tinysql-server` into a single dir.
-3. Under the binary dir, run the following commands:
+Run the standalone server:
+
+```bash
+make
+./bin/tinykv-server
+```
+### Testing
+
+Run tests for specific components:
+
+```bash
+# Test standalone storage
+make project1
+
+# Test Raft implementation
+make project2
+
+# Test Multi-Raft
+make project3
+
+# Test transactions
+make project4
+```
+
+## Integration with TinySQL
+
+You can run TinyKV with TinySQL to get a complete distributed database experience:
+
+1. Get `tinysql-server` following [TinySQL documentation](https://github.com/tidb-incubator/tinysql#deploy)
+2. Place `tinyscheduler-server`, `tinykv-server`, and `tinysql-server` binaries in the same directory
+3. Run the following commands:
 
 ```bash
 mkdir -p data
@@ -86,24 +137,33 @@ mkdir -p data
 ./tinysql-server --store=tikv --path="127.0.0.1:2379"
 ```
 
-Now you can connect to the database with an official MySQL client:
+4. Connect with MySQL client:
 
 ```bash
 mysql -u root -h 127.0.0.1 -P 4000
 ```
-## Autograding and certification
 
-Since Jun 2022, we start using [github classroom](https://github.com/talent-plan/tinysql/blob/course/classroom.md) to accept labs and provide autograding timely. The github classroom invitation is https://classroom.github.com/a/cdlNNrFU. The discussion Wechat/Slack group and the certification after you pass the class is provided in the [tinyKV learning class](https://talentplan.edu.pingcap.com/catalog/info/id:263)
+## Learning Resources
 
+### Reading List
 
-Autograding is a workflow which can automatically run test cases and give feedback timely. However there are some limitations in Github classroom, in order to make golang work and run it in our self-hosted machines, **you need to overwrite the workflow generated by Github classroom and commit it**.
+Check out the [reading list](doc/reading_list.md) for resources on distributed storage systems.
 
-```sh
-cp scripts/classroom.yml .github/workflows/classroom.yml
-git add .github
-git commit -m"update github classroom workflow"
-```
+### Recommended Reading
 
-## Contributing
+- **TiKV Design**: Data storage architecture
+  - [English](https://en.pingcap.com/blog/tidb-internal-data-storage)
+  - [Chinese](https://pingcap.com/zh/blog/tidb-internal-1)
+- **PD Design**: Scheduling system
+  - [English](https://en.pingcap.com/blog/tidb-internal-scheduling)
+  - [Chinese](https://pingcap.com/zh/blog/tidb-internal-3)
+- **Raft Paper**: [The Raft Consensus Algorithm](https://raft.github.io/raft.pdf)
+- **Raft Visualization**: [Interactive Raft](https://raft.github.io/)
 
-Any feedback and contribution is greatly appreciated. Please see [issues](https://github.com/tidb-incubator/tinykv/issues) if you want to join in the development.
+## Acknowledgments
+
+This project is based on the [TinyKV Course](https://github.com/tidb-incubator/tinykv) by PingCAP, part of the [Talent Plan](https://github.com/pingcap/talent-plan) educational initiative.
+
+## License
+
+See [LICENSE](LICENSE) file for details.
