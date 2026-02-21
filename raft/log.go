@@ -56,7 +56,21 @@ type RaftLog struct {
 // to the state that it just commits and applies the latest snapshot.
 func newLog(storage Storage) *RaftLog {
 	// Your Code Here (2A).
-	return nil
+	if storage == nil {
+		panic("storage must not be nil")
+	}
+
+	firstIndex, _ := storage.FirstIndex()
+	lastIndex, _ := storage.LastIndex()
+	hardState, _, _ := storage.InitialState()
+
+	return &RaftLog{
+		storage:   storage,
+		committed: hardState.Commit,
+		applied:   firstIndex - 1, 
+		stabled:   lastIndex,      
+		entries:   make([]pb.Entry, 0), 
+	}
 }
 
 // We need to compact the log entries in some point of time like
