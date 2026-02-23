@@ -85,29 +85,72 @@ func (l *RaftLog) maybeCompact() {
 // note, this is one of the test stub functions you need to implement.
 func (l *RaftLog) allEntries() []pb.Entry {
 	// Your Code Here (2A).
-	return nil
+	if len(l.entries)==0{
+		return nil
+	}
+	return l.entries
 }
 
 // unstableEntries return all the unstable entries
 func (l *RaftLog) unstableEntries() []pb.Entry {
 	// Your Code Here (2A).
-	return nil
+	if len(l.entries)==0{
+		return nil
+	}
+	offset := l.entries[0].Index
+	if l.stabled < offset{
+		return l.entries
+	}
+	lastIndexInMemory := l.entries[len(l.entries)-1].Index
+	if l.stabled >= lastIndexInMemory {
+		return nil
+	}
+	unstableStartIndex := (l.stabled+1) - offset 
+	return l.entries[unstableStartIndex:]
 }
 
 // nextEnts returns all the committed but not applied entries
 func (l *RaftLog) nextEnts() (ents []pb.Entry) {
 	// Your Code Here (2A).
-	return nil
+	if len(l.entries)==0{
+		return nil
+	}
+	offset := l.entries[0].Index
+	if l.applied >=l.committed{
+		return nil
+	}
+	if l.applied<offset{
+		return nil
+	}
+	startIndex := (l.applied+1)- offset
+	endIndex := (l.committed+1)-offset
+	if endIndex>uint64(len(l.entries)){
+		endIndex = uint64(len(l.entries))
+	}
+	return l.entries[startIndex:endIndex]
 }
 
 // LastIndex return the last index of the log entries
 func (l *RaftLog) LastIndex() uint64 {
 	// Your Code Here (2A).
-	return 0
+	if len(l.entries) > 0 {
+		return l.entries[len(l.entries)-1].Index 
+	}
+	lastIdx,_ := l.storage.LastIndex()
+	return lastIdx
 }
 
 // Term return the term of the entry in the given index
 func (l *RaftLog) Term(i uint64) (uint64, error) {
 	// Your Code Here (2A).
-	return 0, nil
+	if i > l.LastIndex(){
+		return 0,ErrUnavailable
+	}
+	if len(l.entries)>0{
+		offset :=l.entries[0].Index
+		if i<offset{
+			return l.entries[i-offset].Term,nil
+		}
+	}
+	return l.storage.Term(i)
 }
