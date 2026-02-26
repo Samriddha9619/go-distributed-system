@@ -1,0 +1,7 @@
+Raft doesn't talk to the network or the hard drive directly. It talks to RawNode, which passes a Ready struct to the upper TinyKV application layer.
+
+HasReady(): Checks if your Raft node has any new logs, new commits, or new network messages waiting to be processed.
+
+Ready(): Packages all that new stuff into a struct so the application can write it to the BadgerDB disk.
+
+Advance(): Called by the application after it finishes writing to disk. This updates your stabled and applied pointers so you don't process the same logs twice

@@ -51,24 +51,32 @@ func (s *StandAloneStorage) Reader(ctx *kvrpcpb.Context) (storage.StorageReader,
 }
 
 func (s *StandAloneStorage) Write(ctx *kvrpcpb.Context, batch []storage.Modify) error {
-	// Your Code Here (1).
-	for _,m := range batch{
-		switch m.Data.(type){
-		case storage.Put:
-			put := m.Data.(storage.Put)
-			err := engine_util.PutCF(s.db, put.Cf,put.Key,put.Value)
-			if err != nil{
-				return err
-			}
-		case storage.Delete:
-			del:=m.Data.(storage.Delete)
-			err:= engine_util.DeleteCF(s.db,del.Cf,del.Key)
-			if err!= nil{
-				return err
-			}
-		}
-	}
-	return nil
+    txn := s.db.NewTransaction(true)
+    defer txn.Discard()
+
+    for _, m := range batch {
+        switch m.Data.(type) {
+        case storage.Put:
+            put := m.Data.(storage.Put)
+            key := engine_util.KeyWithCF(put.Cf, put.Key)
+            
+            err := txn.Set(key, put.Value)
+            if err != nil {       
+                return err       
+            }                     
+            
+        case storage.Delete:
+            del := m.Data.(storage.Delete)
+            key := engine_util.KeyWithCF(del.Cf, del.Key)
+            
+            err := txn.Delete(key)
+            if err != nil {       
+                return err        
+            }                     
+        }
+    }
+    
+    return txn.Commit()
 }
 
 func (r *StandAloneReader) GetCF(cf string, key []byte) ([]byte, error){

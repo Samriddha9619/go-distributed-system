@@ -63,13 +63,14 @@ func newLog(storage Storage) *RaftLog {
 	firstIndex, _ := storage.FirstIndex()
 	lastIndex, _ := storage.LastIndex()
 	hardState, _, _ := storage.InitialState()
+	entries,_ := storage.Entries(firstIndex,lastIndex+1)
 
 	return &RaftLog{
 		storage:   storage,
 		committed: hardState.Commit,
 		applied:   firstIndex - 1, 
 		stabled:   lastIndex,      
-		entries:   make([]pb.Entry, 0), 
+		entries:   entries, 
 	}
 }
 
@@ -135,7 +136,8 @@ func (l *RaftLog) LastIndex() uint64 {
 	// Your Code Here (2A).
 	if len(l.entries) > 0 {
 		return l.entries[len(l.entries)-1].Index 
-	}
+	}// Term return the term of the entry in the given index
+
 	lastIdx,_ := l.storage.LastIndex()
 	return lastIdx
 }
@@ -148,7 +150,7 @@ func (l *RaftLog) Term(i uint64) (uint64, error) {
 	}
 	if len(l.entries)>0{
 		offset :=l.entries[0].Index
-		if i<offset{
+		if i>=offset{
 			return l.entries[i-offset].Term,nil
 		}
 	}
